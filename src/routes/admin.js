@@ -7,12 +7,8 @@ const config = require("../../config");
 var midway = require('./midway');
 const jwt = require('jsonwebtoken');
 var crypto = require('crypto');
-const { equal } = require("assert");
-const { Console } = require("console");
-const { json } = require("body-parser");
 const nodemailer = require('nodemailer');
-const { restart } = require("nodemon");
-const { brotliDecompress } = require("zlib");
+
 
 
 router.post("/SaveStdList", midway.checkToken, (req, res, next) => {
@@ -27,7 +23,7 @@ router.post("/SaveStdList", midway.checkToken, (req, res, next) => {
 
 router.post("/GetStdList", midway.checkToken, (req, res, next) => {
     console.log("call-1");
-    if (req.body.role == 'Admin') {
+    if (req.body.role == 'Admin' || req.body.role == 'Visitor') {
         db.executeSql("select * from stdlist", function (data, err) {
             if (err) {
                 console.log(err);
@@ -90,7 +86,7 @@ router.post("/saveSubject", midway.checkToken, (req, res, next) => {
 
 router.post("/GetSubjectList", midway.checkToken, (req, res, next) => {
     // console.log(req.body);
-    if (req.body.role == 'Admin') {
+    if (req.body.role == 'Admin' || req.body.role == 'Visitor') {
         db.executeSql("select * from subjectlist where stdid=" + req.body.id, function (data, err) {
             if (err) {
                 console.log("Error in store.js", err);
@@ -575,6 +571,46 @@ router.post('/login', function (req, res, next) {
     });
 
 });
+router.post('/VisitorLogin', function (req, res, next) {
+    restart1();
+    const body = req.body;
+    var salt = '7fa73b47df808d36c5fe328546ddef8b9011b2c6';
+    var repass = salt + '' + body.password;
+    var encPassword = crypto.createHash('sha1').update(repass).digest('hex');
+    db.executeSql("select * from visitorreg where email='" + req.body.email + "';", function (data, err) {
+
+        if (data == null || data == undefined) {
+            return res.json(1);
+        }
+        else {
+
+            db.executeSql("select * from visitorreg where email='" + req.body.email + "' and password='" + encPassword + "';", function (data1, err) {
+                console.log(data1);
+                if (data1.length > 0) {
+
+                    module.exports.user1 = {
+                        username: data1[0].email, password: data1[0].password
+                    }
+                    let token = jwt.sign({ username: data1[0].email, password: data1[0].password },
+                        secret,
+                        {
+                            expiresIn: '1h' // expires in 24 hours
+                        }
+                    );
+                    console.log("token=", token);
+                    data[0].token = token;
+
+                    res.cookie('auth', token);
+                    res.json(data);
+                }
+                else {
+                    return res.json(2);
+                }
+            });
+        }
+    });
+
+});
 function restart1() {
     setTimeout(function () {
         // When NodeJS exits
@@ -1015,8 +1051,8 @@ router.post("/ForgetPassword", (req, res, next) => {
                             port: 465,
                             secure: false, // true for 465, false for other ports
                             auth: {
-                                user: 'ptlshubham@gmail.com', // generated ethereal user
-                                pass: 'spiderweb@1', // generated ethereal password
+                                user: 'keryaritsolutions@gmail.com', // generated ethereal user
+                                pass: 'sHAIL@2210', // generated ethereal password
                             },
                         });
                         const output = `
@@ -1027,7 +1063,7 @@ router.post("/ForgetPassword", (req, res, next) => {
                         <a href="http://localhost:4200/password">Change Password</a>
 `;
                         const mailOptions = {
-                            from: '"KerYar" <ptlshubham@gmail.com>',
+                            from: '"KerYar" <keryaritsolutions@gmail.com>',
                             subject: "Password resetting",
                             to: req.body.email,
                             Name: '',
@@ -1068,8 +1104,8 @@ router.post("/ForgetPassword", (req, res, next) => {
                             port: 465,
                             secure: false, // true for 465, false for other ports
                             auth: {
-                                user: 'ptlshubham@gmail.com', // generated ethereal user
-                                pass: 'spiderweb@1', // generated ethereal password
+                                user: 'keryaritsolutions@gmail.com', // generated ethereal user
+                                pass: 'sHAIL@2210', // generated ethereal password
                             },
                         });
                         const output = `
@@ -1080,7 +1116,7 @@ router.post("/ForgetPassword", (req, res, next) => {
                         <a href="http://localhost:4200/password">Change Password</a>
 `;
                         const mailOptions = {
-                            from: '"KerYar" <ptlshubham@gmail.com>',
+                            from: '"KerYar" <keryaritsolutions@gmail.com>',
                             subject: "Password resetting",
                             to: req.body.email,
                             Name: '',
@@ -1121,8 +1157,8 @@ router.post("/ForgetPassword", (req, res, next) => {
                             port: 465,
                             secure: false, // true for 465, false for other ports
                             auth: {
-                                user: 'ptlshubham@gmail.com', // generated ethereal user
-                                pass: 'spiderweb@1', // generated ethereal password
+                                user: 'keryaritsolutions@gmail.com', // generated ethereal user
+                                pass: 'sHAIL@2210', // generated ethereal password
                             },
                         });
                         const output = `
@@ -1133,7 +1169,7 @@ router.post("/ForgetPassword", (req, res, next) => {
                         <a href="http://localhost:4200/password">Change Password</a>
 `;
                         const mailOptions = {
-                            from: '"KerYar" <ptlshubham@gmail.com>',
+                            from: '"KerYar" <keryaritsolutions@gmail.com>',
                             subject: "Password resetting",
                             to: req.body.email,
                             Name: '',
@@ -1279,7 +1315,6 @@ router.post("/UploadOptionsImage", midway.checkToken, (req, res, next) => {
 });
 
 router.post("/saveCalendarEvents", midway.checkToken, (req, res, next) => {
-    console.log(req.body);
     db.executeSql("INSERT INTO `events`(`date`,`title`,`active`,`createddate`)VALUES('" + req.body.date + "','" + req.body.title + "'," + req.body.active + ",CURRENT_TIMESTAMP);", function (data, err) {
         if (err) {
             res.json("error");
@@ -1663,6 +1698,16 @@ router.post("/UpdateVisitorInform", (req, res, next) => {
     });
 });
 
+router.post("/UpdateVisitorReg", (req, res, next) => {
+    db.executeSql("UPDATE `visitorreg` SET address='" + req.body.address + "',city='" + req.body.city + "',pincode=" + req.body.pincode + ",standard='" + req.body.stdid + "',subject='" + req.body.subid + "',school='" + req.body.schoolname + "',qualification='" + req.body.lastqulification + "',percentage='" + req.body.percentage + "',detailsupdated=true WHERE id=" + req.body.visitorId + ";", function (data, err) {
+        if (err) {
+            console.log("Error in store.js", err);
+        } else {
+            return res.json(data);
+        }
+    });
+});
+
 router.post("/GetVisitorTestList", (req, res, next) => {
     db.executeSql("select * from visitortest where subjectId=" + req.body.id, function (data, err) {
         if (err) {
@@ -1754,6 +1799,7 @@ router.post("/UpdateVisitorResult", (req, res, next) => {
     })
 })
 
+
 router.post("/setStatusOfTest", midway.checkToken, (req, res, next) => {
     db.executeSql("INSERT INTO `testattempt`(`testid`, `stuid`, `status`, `createddate`)VALUES(" + req.body.testid + "," + req.body.stuid + ",'" + req.body.status + "',CURRENT_TIMESTAMP);", function (data, err) {
         if (err) {
@@ -1822,6 +1868,8 @@ router.get("/RemoveChapaterList/:id", midway.checkToken, (req, res, next) => {
         }
     });
 })
+
+
 
 function generateUUID() {
     var d = new Date().getTime();

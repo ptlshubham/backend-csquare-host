@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require("../db/db");
 var crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-
+const nodemailer = require('nodemailer');
 
 
 var user;
@@ -55,20 +55,115 @@ router.post("/SaveStudentList", (req, res, next) => {
 });
 
 router.post("/SaveVisitorDetails", (req, res, next) => {
+    let visitotp = Math.floor(100000 + Math.random() * 900000);
     var salt = '7fa73b47df808d36c5fe328546ddef8b9011b2c6';
     var repass = salt + '' + req.body.password;
     var encPassword = crypto.createHash('sha1').update(repass).digest('hex');
-    db.executeSql("INSERT INTO `visitorreg`( `firstname`, `middlename`, `lastname`, `email`, `password`, `gender`, `contact`, `mothername`, `wappnumber`, `address`, `city`, `pincode`, `standard`, `propic`, `subject`, `school`, `qualification`, `fatherCont`, `motherCont`, `percentage`,`createddate`,`isactive`) VALUES ('" + req.body.firstname + "','" + req.body.middlename + "','" + req.body.lastname + "','" + req.body.email + "','" + req.body.password + "','" + req.body.gender + "'," + req.body.contact + ",'" + req.body.mname + "'," + req.body.wapp + ",'" + req.body.address + "','" + req.body.city + "'," + req.body.pincode + "," + req.body.stdid + ",'" + req.body.profile + "'," + req.body.subid + ",'" + req.body.schoolname + "','" + req.body.lastqulification + "'," + req.body.parents + ",'" + req.body.mnumber + "'," + req.body.percentage + ",CURRENT_TIMESTAMP,false)", function (data, err) {
+    db.executeSql("INSERT INTO `visitorreg`(`firstname`,`lastname`,`email`,`password`,`contact`,`createddate`,`isactive`) VALUES ('" + req.body.firstname + "','" + req.body.lastname + "','" + req.body.email + "','" + encPassword + "'," + req.body.contact + ",CURRENT_TIMESTAMP,false)", function (data, err) {
         if (err) {
             console.log(err);
         }
         else {
-            return res.json(data);
+            console.log(req.body);
+            db.executeSql("INSERT INTO `visitorotp`(`vid`, `otp`, `createddate`, `createdtime`,`isactive`) VALUES (" + data.insertId + "," + visitotp + ",CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,true)", function (data1, err) {
+                if (err) {
+                    console.log(err);
+                }
+                else {
+                    const transporter = nodemailer.createTransport({
+                        service: 'gmail',
+                        host: "smtp.gmail.com",
+                        port: 465,
+                        secure: false, // true for 465, false for other ports
+                        auth: {
+                            user: 'keryaritsolutions@gmail.com', // generated ethereal user
+                            pass: 'sHAIL@2210', // generated ethereal password
+                        },
+                    });
+                    const output = `
+                        <h3>One Time Password</h3>
+                        <p>To authenticate, please use the following One Time Password(OTP):<h3>`+ visitotp + `</h3></p>
+                        <p>OTP valid for only 2 Minutes.</P>
+                        <p>Don't share this OTP with anyone.</p>
+                        <a href="http://localhost:4200/password">Change Password</a>
+`;
+                    const mailOptions = {
+                        from: '"KerYar" <keryaritsolutions@gmail.com>',
+                        subject: "One Time Password",
+                        to: req.body.email,
+                        Name: '',
+                        html: output
+
+                    };
+                    transporter.sendMail(mailOptions, function (error, info) {
+                        console.log('fgfjfj')
+                        if (error) {
+                            console.log(error);
+                            res.json("Errror");
+                        } else {
+                            console.log('Email sent: ' + info.response);
+                            data.email = req.body.email;
+                            data.password = req.body.password;
+                            data.username = req.body.firstname + ' ' + req.body.lastname;
+                            res.json(data);
+                        }
+                    });
+                }
+            })
         }
     })
 
 });
 
+router.post("/GetOtpVisitorURL", (req, res, next) => {
+    console.log(req.body)
+    db.executeSql("select * from visitorotp where vid = '" + req.body.visitorId + "' and otp = " + req.body.visitorOtp + " ", function (data, err) {
+        if (err) {
+            console.log("Error in store.js", err);
+        } else {
+            const body = req.body;
+            console.log(body);
+            var salt = '7fa73b47df808d36c5fe328546ddef8b9011b2c6';
+            var repass = salt + '' + body.password;
+            var encPassword = crypto.createHash('sha1').update(repass).digest('hex');
+
+            db.executeSql("select * from visitorreg where email='" + req.body.email + "';", function (data, err) {
+                console.log(data);
+                if (data != null) {
+                    db.executeSql("select * from visitorreg where email='" + req.body.email + "' and password='" + encPassword + "';", function (data, err) {
+                        console.log(data);
+                        if (data != null) {
+
+                            module.exports.user = {
+                                username: data[0].email, password: data[0].password
+                            }
+                            let token = jwt.sign({ username: data[0].email, password: data[0].password },
+                                secret,
+                                {
+                                    expiresIn: '1h' // expires in 24 hours
+                                }
+                            );
+                            console.log("token=", token);
+                            data[0].token = token;
+
+                            res.cookie('auth', token);
+
+                            res.json(data);
+                        }
+                        else {
+                            return res.json(2);
+                        }
+                    });
+                }
+                else {
+                    return res.json(1);
+                }
+            });
+
+            // return res.json(data);
+        }
+    });
+});
 
 let secret = 'prnv';
 router.post('/UserLogin', (req, res, next) => {
@@ -81,7 +176,7 @@ router.post('/UserLogin', (req, res, next) => {
     if (body.role == 'Teacher') {
         db.executeSql("select * from teacherlist where email='" + req.body.email + "';", function (data, err) {
             console.log(data);
-            if (data != null ) {
+            if (data != null) {
                 db.executeSql("select * from teacherlist where email='" + req.body.email + "' and password='" + encPassword + "';", function (data, err) {
                     console.log(data);
                     if (data != null) {
@@ -112,10 +207,10 @@ router.post('/UserLogin', (req, res, next) => {
         });
     }
     else {
-      
+
         db.executeSql("select * from studentlist where email='" + req.body.email + "';", function (data, err) {
             // console.log(data);
-            if (data !=  null) {
+            if (data != null) {
                 db.executeSql("select * from studentlist where email='" + req.body.email + "' and password='" + encPassword + "';", function (data, err) {
                     // console.log(data);
                     if (data != null) {
@@ -145,7 +240,7 @@ router.post('/UserLogin', (req, res, next) => {
         });
     }
 });
-function restart1(){
+function restart1() {
     setTimeout(function () {
         // When NodeJS exits
         console.log("restart ing");
@@ -153,7 +248,7 @@ function restart1(){
 
             require("child_process").spawn(process.argv.shift(), process.argv, {
                 cwd: process.cwd(),
-                detached : true,
+                detached: true,
                 stdio: "inherit"
             });
         });
