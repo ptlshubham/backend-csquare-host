@@ -179,7 +179,7 @@ router.post('/UserLogin', (req, res, next) => {
             if (data != null) {
                 db.executeSql("select * from teacherlist where email='" + req.body.email + "' and password='" + encPassword + "';", function (data, err) {
                     console.log(data);
-                    if (data != null) {
+                    if (data.length >0) {
 
                         module.exports.user = {
                             username: data[0].email, password: data[0].password
@@ -213,7 +213,7 @@ router.post('/UserLogin', (req, res, next) => {
             if (data != null) {
                 db.executeSql("select * from studentlist where email='" + req.body.email + "' and password='" + encPassword + "';", function (data, err) {
                     // console.log(data);
-                    if (data != null) {
+                    if (data.length >0) {
                         module.exports.user = {
                             username: data[0].email, password: data[0].password
                         }
