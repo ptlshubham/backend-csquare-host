@@ -136,6 +136,16 @@ router.post("/GetSubjectList", midway.checkToken, (req, res, next) => {
     }
 });
 
+router.post("/UpdateStandardList", midway.checkToken, (req, res, next) => {
+    console.log(req.body)
+    db.executeSql("UPDATE  `stdlist` SET stdname='" + req.body.stdname + "' WHERE id=" + req.body.id + ";", function (data, err) {
+        if (err) {
+            console.log("Error in store.js", err);
+        } else {
+            return res.json(data);
+        }
+    });
+});
 
 router.post("/UpdateSujectList", midway.checkToken, (req, res, next) => {
     console.log(req.body)
@@ -909,41 +919,41 @@ router.post("/updateSendLink", midway.checkToken, (req, res, next) => {
 router.post("/GetStudentActiveTest", midway.checkToken, (req, res, next) => {
     console.log("call-5");
     console.log(req.body);
- if(req.body.role=='Student'){
-    db.executeSql("select * from testattempt where stuid=" + req.body.stuid + "", function (data, err) {
-        if (err) {
-            console.log("test error", err);
-        }
-        else {
+    if (req.body.role == 'Student') {
+        db.executeSql("select * from testattempt where stuid=" + req.body.stuid + "", function (data, err) {
+            if (err) {
+                console.log("test error", err);
+            }
+            else {
 
-            let test = []
-            if (data.length >= 1) {
-                for (let i = 0; i < data.length; i++) {
-                    db.executeSql("select t.id,t.stdid,t.subjectId,t.totalmarks,t.totalminute,t.testname,t.isactive,t.activetest,t.deactivetest,t.createdate,t.updateddate,s.stdname as StdName,su.subject from testlist t join stdlist s on t.stdid=s.id join subjectlist su on t.subjectId = su.id where t.activetest=1 and t.id=" + data[i].testid, function (data1, err) {
-                        if (err) {
-                            console.log("Error in test join", err);
-                        } else {
-                           
-                            console.log("11status=====", data[i].status);
-                            data1[0].teststatus = data[i].status;
-                            console.log("2status=====", data1[0].teststatus);
-                            console.log("final data will be", data1[0]);
-                            test.push(data1[0]);
-                            if (test.length == data.length) {
-                                console.log("final data will be", test);
-                                return res.json(test);
+                let test = []
+                if (data.length >= 1) {
+                    for (let i = 0; i < data.length; i++) {
+                        db.executeSql("select t.id,t.stdid,t.subjectId,t.totalmarks,t.totalminute,t.testname,t.isactive,t.activetest,t.deactivetest,t.createdate,t.updateddate,s.stdname as StdName,su.subject from testlist t join stdlist s on t.stdid=s.id join subjectlist su on t.subjectId = su.id where t.activetest=1 and t.id=" + data[i].testid, function (data1, err) {
+                            if (err) {
+                                console.log("Error in test join", err);
+                            } else {
+
+                                console.log("11status=====", data[i].status);
+                                data1[0].teststatus = data[i].status;
+                                console.log("2status=====", data1[0].teststatus);
+                                console.log("final data will be", data1[0]);
+                                test.push(data1[0]);
+                                if (test.length == data.length) {
+                                    console.log("final data will be", test);
+                                    return res.json(test);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
+                } else {
+                    return res.json('empty');
                 }
-            } else {
-                return res.json('empty');
+
             }
 
-        }
-
-    })
-    }else{
+        })
+    } else {
         return res.json('true');
     }
 
@@ -1411,9 +1421,9 @@ router.post("/getStudentAttandance", midway.checkToken, (req, res, next) => {
 });
 
 router.post("/SaveVisitorQueList", midway.checkToken, (req, res, next) => {
-    console.log("today im here",req.body)
-    req.body.quetype='MCQ';
-    db.executeSql("INSERT INTO `visitorquestion`(`stdid`, `subid`, `question`, `imageque`, `marks`, `time`, `quetype`, `isactive`, `updateddate`, `chapid`) VALUES(" + req.body.stdid + "," + req.body.subid + ",'" + req.body.question + "',null," + req.body.marks + "," + req.body.time + ",'" + req.body.quetype + "',false,null,"+req.body.chapid+");", function (data, err) {
+    console.log("today im here", req.body)
+    req.body.quetype = 'MCQ';
+    db.executeSql("INSERT INTO `visitorquestion`(`stdid`, `subid`, `question`, `imageque`, `marks`, `time`, `quetype`, `isactive`, `updateddate`, `chapid`) VALUES(" + req.body.stdid + "," + req.body.subid + ",'" + req.body.question + "',null," + req.body.marks + "," + req.body.time + ",'" + req.body.quetype + "',false,null," + req.body.chapid + ");", function (data, err) {
 
         if (err) {
             console.log(err);
@@ -1721,7 +1731,7 @@ router.post("/UpdateVisitorReg", (req, res, next) => {
 });
 
 router.post("/GetVisitorTestList", (req, res, next) => {
-    db.executeSql("select * from visitortest where stdid="+req.body.stdid+" and  subjectId=" + req.body.subid, function (data, err) {
+    db.executeSql("select * from visitortest where stdid=" + req.body.stdid + " and  subjectId=" + req.body.subid, function (data, err) {
         if (err) {
             console.log(err);
         }
