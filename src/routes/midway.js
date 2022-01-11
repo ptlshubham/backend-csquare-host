@@ -13,11 +13,17 @@ let checkToken = (req, res, next) => {
   if (token) {
     jwt.verify(token, 'prnv', (err, decoded) => {
       if (err) {
+
         console.log("erroe here");
-        return res.json({
-          success: false,
-          message: 'Token is not valid'
-        });
+        const error = new Error('Token is not valid');
+        error.status = 100;
+        error.message='Token is not valid';
+        next(error);
+        // console.log("erroe here");
+        // return res.json({
+        //   success: false,
+        //   message: 'Token is not valid'
+        // });
       }
       else {
         if (user.user != undefined) {

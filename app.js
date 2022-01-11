@@ -48,12 +48,16 @@ app.use((req, res, next) => {
 });
 
 app.use((error, req, res, next) => {
-    res.status(error.status || 500);
-    res.json({
-        error: {
-            massage: error.message
-        }
-    });
+    console.log(error.status   );
+    if(error.status ==100){
+        res.send(100, 'Token is not vallid');
+    }
+    // res.status(error.status || 500);
+    // res.json({
+    //     error: {
+    //         massage: error.message
+    //     }
+    // });
 });
 
 module.exports = app;

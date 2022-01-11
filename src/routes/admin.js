@@ -526,6 +526,7 @@ router.post("/GetAllTestList", midway.checkToken, (req, res, next) => {
     }
     else {
         let test = [];
+        console.log("getting testing here====",req.body);
         db.executeSql("select subid from subrightstoteacher where teacherid=" + req.body.teachid, function (data, err) {
             if (err) {
                 console.log("Error in store.js", err);
@@ -554,7 +555,7 @@ router.post("/GetAllTestList", midway.checkToken, (req, res, next) => {
 
 let secret = 'prnv';
 router.post('/login', function (req, res, next) {
-    restart1();
+  
     const body = req.body;
     console.log(body);
     var salt = '7fa73b47df808d36c5fe328546ddef8b9011b2c6';
@@ -577,9 +578,10 @@ router.post('/login', function (req, res, next) {
                     let token = jwt.sign({ username: data1[0].email, password: data1[0].password },
                         secret,
                         {
-                            expiresIn: '1h' // expires in 24 hours
+                            expiresIn: '120s' // expires in 24 hours
                         }
                     );
+                    // restart1();
                     console.log("token=", token);
                     data[0].token = token;
 
@@ -719,6 +721,7 @@ router.post("/UpdateTecaherList", midway.checkToken, (req, res, next) => {
                     console.log(err);
                 }
                 else {
+                    console.log(req.body.rights);
                     for (let i = 0; i < req.body.rights.length; i++) {
                         for (let j = 0; j < req.body.rights[i].selsubjects.length; j++) {
                             db.executeSql("INSERT INTO `subrightstoteacher`(`teacherid`, `stdid`, `subid`, `updateddate`) VALUES (" + req.body.id + "," + req.body.rights[i].stdid + "," + req.body.rights[i].selsubjects[j].subid + ",null)", function (data1, err) {
@@ -927,6 +930,7 @@ router.post("/GetStudentActiveTest", midway.checkToken, (req, res, next) => {
             else {
 
                 let test = []
+                console.log("huhhuhuhuuhhuhuhuh===",data);
                 if (data.length >= 1) {
                     for (let i = 0; i < data.length; i++) {
                         db.executeSql("select t.id,t.stdid,t.subjectId,t.totalmarks,t.totalminute,t.testname,t.isactive,t.activetest,t.deactivetest,t.createdate,t.updateddate,s.stdname as StdName,su.subject from testlist t join stdlist s on t.stdid=s.id join subjectlist su on t.subjectId = su.id where t.activetest=1 and t.id=" + data[i].testid, function (data1, err) {
@@ -940,7 +944,7 @@ router.post("/GetStudentActiveTest", midway.checkToken, (req, res, next) => {
                                 console.log("final data will be", data1[0]);
                                 test.push(data1[0]);
                                 if (test.length == data.length) {
-                                    console.log("final data will be", test);
+                                    console.log("final data will be sented", test);
                                     return res.json(test);
                                 }
                             }
@@ -973,6 +977,7 @@ router.post("/UpdatePendingTest", midway.checkToken, (req, res, next) => {
 });
 
 router.post("/SaveStudentTest", midway.checkToken, (req, res, next) => {
+    console.log("test submitted here -----------")
     let grandtotal = 0;
     let cnt = 0;
     let ngt = 0;
@@ -1019,7 +1024,7 @@ router.post("/SaveStudentTest", midway.checkToken, (req, res, next) => {
                 if (err) {
                     console.log(err)
                 } else {
-                    // return res.json('success');
+                    return res.json('success');
                 }
             })
         }
@@ -1573,16 +1578,18 @@ router.post("/GetVisitorTest", (req, res, next) => {
 
 router.post("/GetTotalofTestmarks", midway.checkToken, (req, res, next) => {
     console.log("result here=====", req.body)
-    db.executeSql("select * from finalresult where studentid=" + req.body.stuid + " and testid=" + req.body.id, function (data, err) {
+    db.executeSql("select * from finalresult where studentid=" + req.body.stuid + " and testid=" + req.body.testid, function (data, err) {
         if (err) {
             console.log(err);
         }
         else {
+            console.log(data);
             if (data == []) {
                 console.log("pppppp");
                 return res.json(0);
             }
             else {
+                console.log(data);
                 return res.json(data);
             }
         }
@@ -1670,33 +1677,89 @@ router.post("/getTestforChecking", midway.checkToken, (req, res, next) => {
     })
 });
 
-router.post("/GetSubjectByIdURL", midway.checkToken, (req, res, next) => {
+router.post("/GetSubjectById", midway.checkToken, (req, res, next) => {
     console.log("qwert", req.body);
-    if (req.body.id == 'undefined') {
-        db.executeSql("select * from subjectlist ;", function (data, err) {
-            if (err) {
+    if(req.body.role =='Admin'){
+        if (req.body.id == 'undefined') {
+            db.executeSql("select * from subjectlist ;", function (data, err) {
+                if (err) {
+                    console.log(err);
+                }
+                else {
+                    return res.json(data);
+    
+                }
+            })
+        }
+        else {
+            db.executeSql("select * from subjectlist where stdid=" + req.body.id, function (data, err) {
+                if (err) {
+                    console.log(err);
+                }
+                else {
+                    return res.json(data);
+                }
+            });
+        }
+    }else{
+        db.executeSql("select * from subrightstoteacher where teacherid="+req.body.teachid+" and stdid="+req.body.id,function(data,err){
+            if(err){
                 console.log(err);
             }
-            else {
-                return res.json(data);
-
+            else{
+                let subs=[];        
+                console.log(data)        
+                for(let i=0;i<data.length;i++){
+                    db.executeSql("select * from subjectlist where id="+data[i].subid,function(data1,err){
+                        if(err){
+                            console.log(err);
+                        }
+                        else{
+                            subs.push(data1[0]);
+                            if(subs.length == data.length){
+                                return res.json(subs);
+                            }
+                        }
+                    })
+                }
             }
         })
     }
-    else {
-        db.executeSql("select * from subjectlist where stdid=" + req.body.id, function (data, err) {
-            if (err) {
-                console.log(err);
-            }
-            else {
-                return res.json(data);
-            }
-        });
-    }
-
-
 })
 
+router.post("/GetTestbySub",midway.checkToken,(req,res,next)=>{
+    console.log("wawawawazwzs",req.body);
+    db.executeSql("select * from testlist where subjectId="+req.body.subid,function(data,err){
+        if(err){
+            console.log(err);
+        }
+        else{
+            let test=[];
+            let test1=[];
+            console.log("pppppppppppp",data);
+            if(data.length >0){
+                for(let i=0;i<data.length;i++){
+                    db.executeSql("select * from testattempt ta join testlist t on t.id = ta.testid  join subjectlist su on t.subjectId = su.id  join stdlist s on t.stdid=s.id where ta.testid="+data[i].id+" and ta.stuid="+req.body.stuid,function(data1,err){
+                        if(err){
+                            console.log(err);
+                        }
+                        else{
+                            test1.push(data1[0]);
+                            if(test1.length == data.length){
+                                console.log("final data will be sent", test1);
+                                return res.json(test1);
+                            }
+                        }   
+                    })
+                }   
+            }
+            else{
+                return res.json(test1);
+            }
+           
+        }
+    })
+})
 router.get("/GetAllVisitor", midway.checkToken, (req, res, next) => {
     db.executeSql("select * from visitorreg", function (data, err) {
         if (err) {
@@ -1823,13 +1886,15 @@ router.post("/UpdateVisitorResult", (req, res, next) => {
 
 
 router.post("/setStatusOfTest", midway.checkToken, (req, res, next) => {
-    db.executeSql("INSERT INTO `testattempt`(`testid`, `stuid`, `status`, `createddate`)VALUES(" + req.body.testid + "," + req.body.stuid + ",'" + req.body.status + "',CURRENT_TIMESTAMP);", function (data, err) {
+    console.log(req.body);
+    db.executeSql("Update testattempt set status='" + req.body.status + "'  where testid=" + req.body.testid + " and stuid=" + req.body.stuid, function (data, err) {
         if (err) {
-            console.log(err);
-        } else {
+            console.log(err)
+        }
+        else {
             res.json(data);
         }
-    });
+    })
 });
 
 router.post("/updateStatusOfTest", midway.checkToken, (req, res, next) => {

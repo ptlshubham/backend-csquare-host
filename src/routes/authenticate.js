@@ -74,7 +74,7 @@ router.post("/SaveVisitorDetails", (req, res, next) => {
                         service: 'gmail',
                         host: "smtp.gmail.com",
                         port: 465,
-                        secure: false, // true for 465, false for other ports
+                        secure: true, // true for 465, false for other ports
                         auth: {
                             user: 'keryaritsolutions@gmail.com', // generated ethereal user
                             pass: 'sHAIL@2210', // generated ethereal password
@@ -97,10 +97,12 @@ router.post("/SaveVisitorDetails", (req, res, next) => {
                     };
                     transporter.sendMail(mailOptions, function (error, info) {
                         console.log('fgfjfj')
+                        
                         if (error) {
                             console.log(error);
                             res.json("Errror");
                         } else {
+                            console.log(info);
                             console.log('Email sent: ' + info.response);
                             data.email = req.body.email;
                             data.password = req.body.password;
@@ -167,7 +169,7 @@ router.post("/GetOtpVisitorURL", (req, res, next) => {
 
 let secret = 'prnv';
 router.post('/UserLogin', (req, res, next) => {
-    restart1();
+    // restart1();
     const body = req.body;
     console.log(body);
     var salt = '7fa73b47df808d36c5fe328546ddef8b9011b2c6';
