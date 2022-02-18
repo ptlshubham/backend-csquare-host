@@ -578,10 +578,10 @@ router.post('/login', function (req, res, next) {
                     let token = jwt.sign({ username: data1[0].email, password: data1[0].password },
                         secret,
                         {
-                            expiresIn: '120s' // expires in 24 hours
+                            expiresIn: '1h' // expires in 24 hours
                         }
                     );
-                    // restart1();
+                    restart1();
                     console.log("token=", token);
                     data[0].token = token;
 
@@ -1578,7 +1578,7 @@ router.post("/GetVisitorTest", (req, res, next) => {
 
 router.post("/GetTotalofTestmarks", midway.checkToken, (req, res, next) => {
     console.log("result here=====", req.body)
-    db.executeSql("select * from finalresult where studentid=" + req.body.stuid + " and testid=" + req.body.testid, function (data, err) {
+    db.executeSql("select * from finalresult where studentid=" + req.body.stuid + " and testid=" + req.body.id, function (data, err) {
         if (err) {
             console.log(err);
         }
@@ -1701,7 +1701,7 @@ router.post("/GetSubjectById", midway.checkToken, (req, res, next) => {
                 }
             });
         }
-    }else{
+    }else if(req.body.role == 'Teacher'){
         db.executeSql("select * from subrightstoteacher where teacherid="+req.body.teachid+" and stdid="+req.body.id,function(data,err){
             if(err){
                 console.log(err);
@@ -1724,6 +1724,15 @@ router.post("/GetSubjectById", midway.checkToken, (req, res, next) => {
                 }
             }
         })
+    }else{
+        db.executeSql("select * from subjectlist where stdid=" + req.body.id, function (data, err) {
+            if (err) {
+                console.log(err);
+            }
+            else {
+                return res.json(data);
+            }
+        });
     }
 })
 

@@ -25,9 +25,11 @@ router.post("/saveTeacherList", (req, res, next) => {
                 for (let j = 0; j < req.body.rights[i].selsubjects.length; j++) {
                     db.executeSql("INSERT INTO `subrightstoteacher`(`teacherid`, `stdid`, `subid`, `updateddate`) VALUES (" + data.insertId + "," + req.body.rights[i].stdid + "," + req.body.rights[i].selsubjects[j].subid + ",null)", function (data1, err) {
                         if (err) {
-                            console.log(err);
+                            console.log("shhushus",err);
                         }
-                        else { }
+                        else { 
+                            
+                        }
                     })
                 }
             }
